@@ -1,1 +1,1 @@
-Draw a rectangle border on a TextView
+Draw a rectangle border on a custom TextView
