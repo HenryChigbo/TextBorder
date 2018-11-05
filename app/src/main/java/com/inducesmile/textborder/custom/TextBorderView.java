@@ -5,7 +5,6 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -24,11 +23,9 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
 
     private String userText;
 
-    private Paint rectPaint;
-    private int padding = 12;
+    private int thickness = 5;
 
-    private int viewWidth;
-    private int viewHeighth;
+    private Paint rectPaint;
 
     private float initialXPosition;
     private float initialYPosition;
@@ -36,15 +33,11 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
     private float finalXPosition;
     private float finalYPosition;
 
+    private int rectLeft;
+    private int rectRight;
+    private int rectTop;
+    private int rectBottom;
 
-    private enum Directions{
-        LEFT,
-        RIGHT,
-        QOWN,
-        UP
-    }
-
-    private Directions movementDirection;
 
 
     public TextBorderView(Context context) {
@@ -72,32 +65,30 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
 
         rectPaint = new Paint();
         rectPaint.setAntiAlias(true);
-        rectPaint.setStrokeWidth(5);
+        rectPaint.setStrokeWidth(thickness);
         rectPaint.setStyle(Paint.Style.STROKE);
-        rectPaint.setTypeface(Typeface.DEFAULT);// your preference here
+        rectPaint.setTypeface(Typeface.DEFAULT);
         rectPaint.setTextSize(20);
         rectPaint.setColor(getResources().getColor(R.color.colorAccent));
+
+        getRectBoundingSize();
     }
 
 
-    private RectF getRectBoundingSize() {
+    private void getRectBoundingSize() {
         rectPaint.getTextBounds(getText().toString(), 0, getText().toString().length(), textBoundingRect);
-
-        int rectLeft = (int)convertDpToPixel(textBoundingRect.left, context);
-        int rectRight = (int)convertDpToPixel(textBoundingRect.right, context);
-        int rectTop = (int)convertDpToPixel(textBoundingRect.top, context);
-        int rectBottom = (int)convertDpToPixel(textBoundingRect.bottom, context);
-
-        int height = (int)convertDpToPixel(textBoundingRect.height(), context);
-        int width = (int)convertDpToPixel(textBoundingRect.width(), context);
 
         int pLeft = getPaddingLeft();
         int pRight = getPaddingRight();
         int pTop = getPaddingTop();
         int pBottom = getPaddingBottom();
 
-        Log.d(TAG, "Dimens " + rectLeft + " " + rectRight + " " + rectTop + " " + (rectBottom - rectTop) + " width height " + width + " " + height);
-        return new RectF(rectLeft + pLeft - 10, rectTop + pTop + 20, rectRight + pRight + 10, height + pBottom + 20);
+        rectLeft = (int)convertDpToPixel(textBoundingRect.left, context) + pLeft;
+        rectRight = (int)convertDpToPixel(textBoundingRect.right, context) + pRight;
+
+        rectTop = getTop() + pTop + thickness;
+        rectBottom = (int)(convertDpToPixel(textBoundingRect.bottom, context) + pBottom + getTextSize()) + thickness;
+
     }
 
 
@@ -110,30 +101,18 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
 
 
     private void drawRectangleTextBorder(Canvas canvas, Paint paint) {
-        RectF rectToDraw = getRectBoundingSize();
+        Rect rectToDraw = new Rect(rectLeft, rectTop, rectRight, rectBottom);
         canvas.drawRect(rectToDraw, paint);
-    }
-
-
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        viewWidth = w;
-        viewHeighth = h;
     }
 
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-        //canvas.drawColor(Color.BLUE);
-
+        canvas.drawRect(0, 0, getWidth(), getHeight(), rectPaint);
         if (viewHasText()) {
             drawRectangleTextBorder(canvas, rectPaint);
         }
-
-
     }
 
 
@@ -147,13 +126,16 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
                 return true;
 
             case MotionEvent.ACTION_UP:
-                finalXPosition = event.getX();
-                finalYPosition = event.getY();
-                Log.d(TAG, "Action up has been called");
+                initialXPosition = finalXPosition;
+                initialYPosition = finalYPosition;
                 return true;
 
             case MotionEvent.ACTION_MOVE:
-                Log.d(TAG, "Action move has been called");
+                finalXPosition = event.getX();
+                int changeInXPosition  =  (int)(finalXPosition - initialXPosition);
+                finalYPosition = event.getY();
+                int changeInYPosition = (int)(finalYPosition - initialYPosition);
+                moveTextHorizontally(changeInXPosition, changeInYPosition);
                 return true;
         }
 
@@ -168,51 +150,13 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
     }
 
 
-    private void moveTextHorizontally(int left){
-        setLeft(left);
-        invalidate();
-    }
-
-
-    private void actionToPerformOnUp(MotionEvent event){
-        finalXPosition = event.getX();
-        finalYPosition = event.getY();
-        Log.d(TAG, "Action up has been called");
-
-        if(finalXPosition > initialXPosition){
-            // box is move to the right
-            movementDirection = Directions.RIGHT;
-        }
-        if(finalXPosition < initialXPosition){
-            // box is move to the left
-            movementDirection = Directions.LEFT;
-        }
-        if(finalYPosition < initialYPosition){
-            // box is move to the down
-            movementDirection = Directions.QOWN;
-        }
-        if(finalYPosition > initialYPosition){
-            // box is move to the up
-            movementDirection = Directions.UP;
-        }
-    }
-
-
-    private void moveBoxHorizontally(float newXValue, int direction){
-        if(movementDirection == Directions.RIGHT){
-
-        }
-    }
-
-
-    @Override
-    public boolean performClick() {
-        return super.performClick();
-    }
-
-
-    public String getUserText() {
-        return userText;
+    private void moveTextHorizontally(int left, int top){
+        rectLeft = rectLeft + left;
+        rectRight = rectLeft + 300;
+        rectTop = rectTop + top;
+        rectBottom = rectTop + 40;
+        this.setX(rectLeft);
+        this.setY(rectTop);
     }
 
 
@@ -222,19 +166,10 @@ public class TextBorderView extends android.support.v7.widget.AppCompatTextView 
     }
 
 
-    public float convertPixelsToDp(float px, Context context){
-        Resources resources = context.getResources();
-        DisplayMetrics metrics = resources.getDisplayMetrics();
-        float dp = px / ((float)metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT);
-        return dp;
-    }
-
-
     public float convertDpToPixel(float dp, Context context){
         Resources resources = context.getResources();
         DisplayMetrics metrics = resources.getDisplayMetrics();
-        float px = dp * ((float)metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT);
-        return px;
+        return dp * ((float)metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT);
     }
 
 }

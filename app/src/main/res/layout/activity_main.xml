@@ -4,8 +4,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:gravity="center"
     tools:context=".MainActivity">
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Text Border "
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="20sp"
+        android:padding="30dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/border"
+        android:layout_gravity="center"/>
 
 
     <com.inducesmile.textborder.custom.TextBorderView
@@ -14,9 +27,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:textSize="20sp"
-        android:padding="10dp"
+        android:padding="30dp"
         android:gravity="center"
         android:textColor="@color/colorPrimaryDark"
-        android:text="This is what we plan to do"/>
+        android:text="Custom Textview With Border"/>
 
 </LinearLayout>
